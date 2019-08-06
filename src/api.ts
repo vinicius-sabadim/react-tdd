@@ -5,4 +5,6 @@ type Post = {
   tags: string[]
 }
 
-export const savePost = (post: Post) => {}
+export const savePost = (post: Post) => {
+  return new Promise(resolve => resolve())
+}

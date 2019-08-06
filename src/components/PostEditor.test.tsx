@@ -1,5 +1,6 @@
 import React from 'react'
-import { render, fireEvent } from '@testing-library/react'
+import { render, fireEvent, wait } from '@testing-library/react'
+import { Redirect as mockRedirect } from 'react-router'
 import faker from 'faker'
 
 import PostEditor from './PostEditor'
@@ -11,9 +12,28 @@ jest.mock('../api', () => {
   }
 })
 
+jest.mock('react-router', () => {
+  return {
+    Redirect: jest.fn(() => null)
+  }
+})
+
 afterEach(() => {
   jest.clearAllMocks()
 })
+
+type User = {
+  id: string
+}
+
+function getPost(user: User) {
+  return {
+    authorId: user.id,
+    title: faker.lorem.words(),
+    content: faker.lorem.sentences(),
+    tags: [faker.random.word(), faker.random.word()]
+  }
+}
 
 describe('PostEditor', () => {
   test('renders a form with title, content, tags, and a submit button', () => {
@@ -49,13 +69,7 @@ describe('PostEditor', () => {
     const user = {
       id: faker.random.uuid()
     }
-
-    const post = {
-      authorId: user.id,
-      title: faker.lorem.words(),
-      content: faker.lorem.sentences(),
-      tags: [faker.random.word(), faker.random.word()]
-    }
+    const post = getPost(user)
 
     const { getByLabelText, getByText } = render(<PostEditor author={user} />)
 
@@ -73,5 +87,33 @@ describe('PostEditor', () => {
     fireEvent.click(submitButton)
     expect(mockSavePost).toBeCalledTimes(1)
     expect(mockSavePost).toBeCalledWith(post)
+  })
+
+  test('after saving, redirects to home', async () => {
+    const user = {
+      id: faker.random.uuid()
+    }
+    const post = getPost(user)
+
+    const { getByLabelText, getByText, debug } = render(
+      <PostEditor author={user} />
+    )
+
+    const titleLabel = getByLabelText(/title/i)
+    fireEvent.change(titleLabel, { target: { value: post.title } })
+
+    const contentLabel = getByLabelText(/content/i)
+    fireEvent.change(contentLabel, { target: { value: post.content } })
+
+    const tagsLabel = getByLabelText(/tags/i)
+    fireEvent.change(tagsLabel, { target: { value: post.tags.join(', ') } })
+
+    const submitButton = getByText(/save/i)
+
+    fireEvent.click(submitButton)
+    await wait(() => {
+      expect(mockRedirect).toBeCalledTimes(1)
+      expect(mockRedirect).toBeCalledWith({ to: '/' }, {})
+    })
   })
 })

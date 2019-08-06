@@ -1,4 +1,5 @@
 import React from 'react'
+import { Redirect } from 'react-router'
 
 import { savePost } from '../api'
 
@@ -11,12 +12,13 @@ interface PostEditorProps {
 }
 
 const PostEditor: React.FC<PostEditorProps> = ({ author }) => {
-  const [isSaving, setIsSaving] = React.useState<boolean>(false)
   const [title, setTitle] = React.useState<string>('')
   const [content, setContent] = React.useState<string>('')
   const [tags, setTags] = React.useState<string>('')
+  const [isSaving, setIsSaving] = React.useState<boolean>(false)
+  const [needRedirect, setNeedRedirect] = React.useState<boolean>(false)
 
-  const handleSubmit = (event: React.SyntheticEvent) => {
+  const handleSubmit = async (event: React.SyntheticEvent) => {
     event.preventDefault()
     setIsSaving(true)
 
@@ -27,7 +29,12 @@ const PostEditor: React.FC<PostEditorProps> = ({ author }) => {
       tags: tags.split(',').map(elem => elem.trim())
     }
 
-    savePost(post)
+    await savePost(post)
+    setNeedRedirect(true)
+  }
+
+  if (needRedirect) {
+    return <Redirect to="/" />
   }
 
   return (

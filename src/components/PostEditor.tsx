@@ -17,6 +17,7 @@ const PostEditor: React.FC<PostEditorProps> = ({ author }) => {
   const [tags, setTags] = React.useState<string>('')
   const [isSaving, setIsSaving] = React.useState<boolean>(false)
   const [needRedirect, setNeedRedirect] = React.useState<boolean>(false)
+  const [hasError, setHasError] = React.useState<boolean>(false)
 
   const handleSubmit = async (event: React.SyntheticEvent) => {
     event.preventDefault()
@@ -29,8 +30,13 @@ const PostEditor: React.FC<PostEditorProps> = ({ author }) => {
       tags: tags.split(',').map(elem => elem.trim())
     }
 
-    await savePost(post)
-    setNeedRedirect(true)
+    try {
+      await savePost(post)
+      setNeedRedirect(true)
+    } catch {
+      setHasError(true)
+      setIsSaving(false)
+    }
   }
 
   if (needRedirect) {
@@ -65,6 +71,12 @@ const PostEditor: React.FC<PostEditorProps> = ({ author }) => {
       <button type="submit" disabled={isSaving}>
         Save
       </button>
+
+      {hasError && (
+        <p data-testid="post-error">
+          There was an error when trying to save the post.
+        </p>
+      )}
     </form>
   )
 }

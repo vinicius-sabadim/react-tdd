@@ -1,10 +1,13 @@
 import React from 'react'
-import { render, fireEvent, wait } from '@testing-library/react'
-import { Redirect as mockRedirect } from 'react-router'
+import { render, fireEvent, wait, waitForElement } from '@testing-library/react'
+import { Redirect } from 'react-router'
 import faker from 'faker'
 
 import PostEditor from './PostEditor'
-import { savePost as mockSavePost } from '../api'
+import { savePost } from '../api'
+
+const mockRedirect = Redirect as jest.Mock<any>
+const mockSavePost = savePost as jest.Mock<any>
 
 jest.mock('../api', () => {
   return {
@@ -95,9 +98,7 @@ describe('PostEditor', () => {
     }
     const post = getPost(user)
 
-    const { getByLabelText, getByText, debug } = render(
-      <PostEditor author={user} />
-    )
+    const { getByLabelText, getByText } = render(<PostEditor author={user} />)
 
     const titleLabel = getByLabelText(/title/i)
     fireEvent.change(titleLabel, { target: { value: post.title } })
@@ -115,5 +116,34 @@ describe('PostEditor', () => {
       expect(mockRedirect).toBeCalledTimes(1)
       expect(mockRedirect).toBeCalledWith({ to: '/' }, {})
     })
+  })
+
+  test('when an error occur on saving, show a message', async () => {
+    const user = {
+      id: faker.random.uuid()
+    }
+    const post = getPost(user)
+
+    const { getByLabelText, getByText, getByTestId } = render(
+      <PostEditor author={user} />
+    )
+
+    const titleLabel = getByLabelText(/title/i)
+    fireEvent.change(titleLabel, { target: { value: post.title } })
+
+    const contentLabel = getByLabelText(/content/i)
+    fireEvent.change(contentLabel, { target: { value: post.content } })
+
+    const tagsLabel = getByLabelText(/tags/i)
+    fireEvent.change(tagsLabel, { target: { value: post.tags.join(', ') } })
+
+    const submitButton = getByText(/save/i)
+
+    mockSavePost.mockRejectedValueOnce({ data: { error: 'An error' } })
+    fireEvent.click(submitButton)
+
+    const postError = await waitForElement(() => getByTestId('post-error'))
+    expect(postError).toBeInTheDocument()
+    expect(submitButton).not.toBeDisabled()
   })
 })

@@ -1,5 +1,5 @@
 import React from 'react'
-import { render } from '@testing-library/react'
+import { render, fireEvent } from '@testing-library/react'
 import PostEditor from './PostEditor'
 
 describe('PostEditor', () => {
@@ -14,5 +14,13 @@ describe('PostEditor', () => {
     expect(content).toBeInTheDocument()
     expect(tags).toBeInTheDocument()
     expect(submitButton).toBeInTheDocument()
+  })
+
+  test('the submit button is disabled when clicked', () => {
+    const { getByText } = render(<PostEditor />)
+    const submitButton = getByText(/save/i)
+    fireEvent.click(submitButton)
+
+    expect(submitButton).toBeDisabled()
   })
 })

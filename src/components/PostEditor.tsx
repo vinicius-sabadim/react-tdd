@@ -1,8 +1,15 @@
 import React from 'react'
 
 export default function PostEditor() {
+  const [isSaving, setIsSaving] = React.useState<boolean>(false)
+
+  const handleSubmit = (event: React.SyntheticEvent) => {
+    event.preventDefault()
+    setIsSaving(true)
+  }
+
   return (
-    <form>
+    <form onSubmit={handleSubmit}>
       <label htmlFor="title-input">Title</label>
       <input type="text" id="title-input" />
 
@@ -12,7 +19,9 @@ export default function PostEditor() {
       <label htmlFor="tags-input">Tags</label>
       <input type="text" id="tags-input" />
 
-      <button type="submit">Save</button>
+      <button type="submit" disabled={isSaving}>
+        Save
+      </button>
     </form>
   )
 }

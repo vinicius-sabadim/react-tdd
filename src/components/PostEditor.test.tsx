@@ -1,5 +1,10 @@
 import React from 'react'
-import { render, fireEvent, wait, waitForElement } from '@testing-library/react'
+import {
+  render as rtlRender,
+  fireEvent,
+  wait,
+  waitForElement
+} from '@testing-library/react'
 import { Redirect } from 'react-router'
 import faker from 'faker'
 
@@ -38,17 +43,30 @@ function getPost(user: User) {
   }
 }
 
+function render() {
+  const user = {
+    id: faker.random.uuid()
+  }
+  const utils = rtlRender(<PostEditor author={user} />)
+
+  const titleLabel = utils.getByLabelText(/title/i)
+  const contentLabel = utils.getByLabelText(/content/i)
+  const tagsLabel = utils.getByLabelText(/tags/i)
+  const submitButton = utils.getByText(/save/i)
+
+  return {
+    ...utils,
+    user,
+    titleLabel,
+    contentLabel,
+    tagsLabel,
+    submitButton
+  }
+}
+
 describe('PostEditor', () => {
   test('renders a form with title, content, tags, and a submit button', () => {
-    const user = {
-      id: faker.random.uuid()
-    }
-
-    const { getByLabelText, getByText } = render(<PostEditor author={user} />)
-    const titleLabel = getByLabelText(/title/i)
-    const contentLabel = getByLabelText(/content/i)
-    const tagsLabel = getByLabelText(/tags/i)
-    const submitButton = getByText(/save/i)
+    const { titleLabel, contentLabel, tagsLabel, submitButton } = render()
 
     expect(titleLabel).toBeInTheDocument()
     expect(contentLabel).toBeInTheDocument()
@@ -57,35 +75,19 @@ describe('PostEditor', () => {
   })
 
   test('the submit button is disabled when clicked', () => {
-    const user = {
-      id: faker.random.uuid()
-    }
-
-    const { getByText } = render(<PostEditor author={user} />)
-    const submitButton = getByText(/save/i)
+    const { submitButton } = render()
     fireEvent.click(submitButton)
 
     expect(submitButton).toBeDisabled()
   })
 
   test('when submit call the api with the post', () => {
-    const user = {
-      id: faker.random.uuid()
-    }
+    const { titleLabel, contentLabel, tagsLabel, submitButton, user } = render()
     const post = getPost(user)
 
-    const { getByLabelText, getByText } = render(<PostEditor author={user} />)
-
-    const titleLabel = getByLabelText(/title/i)
     fireEvent.change(titleLabel, { target: { value: post.title } })
-
-    const contentLabel = getByLabelText(/content/i)
     fireEvent.change(contentLabel, { target: { value: post.content } })
-
-    const tagsLabel = getByLabelText(/tags/i)
     fireEvent.change(tagsLabel, { target: { value: post.tags.join(', ') } })
-
-    const submitButton = getByText(/save/i)
 
     fireEvent.click(submitButton)
     expect(mockSavePost).toBeCalledTimes(1)
@@ -93,23 +95,12 @@ describe('PostEditor', () => {
   })
 
   test('after saving, redirects to home', async () => {
-    const user = {
-      id: faker.random.uuid()
-    }
+    const { titleLabel, contentLabel, tagsLabel, submitButton, user } = render()
     const post = getPost(user)
 
-    const { getByLabelText, getByText } = render(<PostEditor author={user} />)
-
-    const titleLabel = getByLabelText(/title/i)
     fireEvent.change(titleLabel, { target: { value: post.title } })
-
-    const contentLabel = getByLabelText(/content/i)
     fireEvent.change(contentLabel, { target: { value: post.content } })
-
-    const tagsLabel = getByLabelText(/tags/i)
     fireEvent.change(tagsLabel, { target: { value: post.tags.join(', ') } })
-
-    const submitButton = getByText(/save/i)
 
     fireEvent.click(submitButton)
     await wait(() => {
@@ -119,25 +110,19 @@ describe('PostEditor', () => {
   })
 
   test('when an error occur on saving, show a message', async () => {
-    const user = {
-      id: faker.random.uuid()
-    }
+    const {
+      titleLabel,
+      contentLabel,
+      tagsLabel,
+      submitButton,
+      user,
+      getByTestId
+    } = render()
     const post = getPost(user)
 
-    const { getByLabelText, getByText, getByTestId } = render(
-      <PostEditor author={user} />
-    )
-
-    const titleLabel = getByLabelText(/title/i)
     fireEvent.change(titleLabel, { target: { value: post.title } })
-
-    const contentLabel = getByLabelText(/content/i)
     fireEvent.change(contentLabel, { target: { value: post.content } })
-
-    const tagsLabel = getByLabelText(/tags/i)
     fireEvent.change(tagsLabel, { target: { value: post.tags.join(', ') } })
-
-    const submitButton = getByText(/save/i)
 
     mockSavePost.mockRejectedValueOnce({ data: { error: 'An error' } })
     fireEvent.click(submitButton)
